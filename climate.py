@@ -72,7 +72,7 @@ class TionClimate(ClimateDevice):
     @property
     def hvac_modes(self):
         """Return the list of available operation modes."""
-        _operations = [HVAC_MODE_OFF, HVAC_MODE_FAN_ONLY]
+        _operations = [HVAC_MODE_FAN_ONLY, ]
         if self._breezer.heater_installed:
             _operations.append(HVAC_MODE_HEAT)
         return _operations
@@ -156,9 +156,7 @@ class TionClimate(ClimateDevice):
     def set_hvac_mode(self, hvac_mode):
         """Set new target operation mode."""
         _LOGGER.info(f"Setting hvac mode to {hvac_mode}")
-        if hvac_mode == HVAC_MODE_OFF:
-            self.set_fan_mode(FAN_OFF)
-        elif hvac_mode == HVAC_MODE_HEAT:
+        if hvac_mode == HVAC_MODE_HEAT:
             self._breezer.heater_enabled = True
             self._breezer.send()
         elif hvac_mode == HVAC_MODE_FAN_ONLY:
