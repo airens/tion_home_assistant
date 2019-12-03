@@ -1,0 +1,10 @@
+{
+  "domain": "tion",
+  "name": "Tion",
+  "documentation": "",
+  "requirements": [
+    "tion==0.62"
+  ],
+  "dependencies": [],
+  "codeowners": []
+}
