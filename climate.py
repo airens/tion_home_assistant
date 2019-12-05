@@ -106,7 +106,7 @@ class TionClimate(ClimateDevice):
     def fan_modes(self):
         """Return the list of available fan modes."""
         _fan_modes = [FAN_OFF, FAN_AUTO]
-        _fan_modes.extend(range(1, int(self._breezer.speed_limit) + 1))
+        _fan_modes.extend(range(0, int(self._breezer.speed_limit) + 1))
         return _fan_modes
 
     def set_temperature(self, **kwargs):
