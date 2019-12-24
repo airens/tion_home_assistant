@@ -3,7 +3,7 @@
   "name": "Tion",
   "documentation": "",
   "requirements": [
-    "tion==0.7"
+    "tion==0.71"
   ],
   "dependencies": [],
   "codeowners": []
