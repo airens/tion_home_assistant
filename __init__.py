@@ -1,7 +1,8 @@
 import logging
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
-from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
+from datetime import timedelta
+from homeassistant.const import CONF_USERNAME, CONF_PASSWORD, CONF_SCAN_INTERVAL
 from homeassistant.helpers import discovery
 
 DOMAIN = 'tion'
@@ -18,12 +19,15 @@ BREEZER_DEVICE = "breezer"
 
 _LOGGER = logging.getLogger(__name__)
 
+DEFAULT_SCAN_INTERVAL = timedelta(minutes=1)
+
 CONFIG_SCHEMA = vol.Schema(
     {
         DOMAIN: vol.Schema(
             {
                 vol.Required(CONF_USERNAME): cv.string,
                 vol.Required(CONF_PASSWORD): cv.string,
+                vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.time_period,
             }
         )
     },
@@ -34,7 +38,7 @@ CONFIG_SCHEMA = vol.Schema(
 def setup(hass, config):
     """Set up Tion Component."""
     from tion import TionApi, Breezer, MagicAir
-    api = TionApi(config[DOMAIN][CONF_USERNAME], config[DOMAIN][CONF_PASSWORD])
+    api = TionApi(config[DOMAIN][CONF_USERNAME], config[DOMAIN][CONF_PASSWORD], min_update_interval_sec=(config[DOMAIN][CONF_SCAN_INTERVAL]).seconds)
     assert api.authorization, "Couldn't get authorisation data!"
     _LOGGER.info(f"Api initialized with authorization {api.authorization}")
     hass.data[TION_API] = api
