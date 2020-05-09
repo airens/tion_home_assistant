@@ -13,8 +13,12 @@ tion:
 ```yaml
   scan_interval: 600
 ```
-5. add `tion_email` and `tion_password` to your secrets.yaml
-6. restart Home Assistant
+5. optionally: set path to file to save auth information (default - "{homeassistant_config_dir}/tion_auth")
+```yaml
+  file_path: "/tmp/tion_auth"
+```
+6. add `tion_email` and `tion_password` to your secrets.yaml
+7. restart Home Assistant
 ## Usage:
 After restart you should see your breezer device as `climate.tion_...` and your MagicAir sensors as `sensor.magicair_..`.
 Services, allowed to control your breezer:

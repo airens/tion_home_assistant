@@ -2,7 +2,7 @@ import logging
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from datetime import timedelta
-from homeassistant.const import CONF_USERNAME, CONF_PASSWORD, CONF_SCAN_INTERVAL
+from homeassistant.const import CONF_USERNAME, CONF_PASSWORD, CONF_SCAN_INTERVAL, CONF_FILE_PATH
 from homeassistant.helpers import discovery
 
 DOMAIN = 'tion'
@@ -20,6 +20,7 @@ BREEZER_DEVICE = "breezer"
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_SCAN_INTERVAL = timedelta(minutes=1)
+DEFAULT_AUTH_FNAME = "tion_auth"
 
 CONFIG_SCHEMA = vol.Schema(
     {
@@ -28,6 +29,7 @@ CONFIG_SCHEMA = vol.Schema(
                 vol.Required(CONF_USERNAME): cv.string,
                 vol.Required(CONF_PASSWORD): cv.string,
                 vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.time_period,
+                vol.Optional(CONF_FILE_PATH, default=DEFAULT_AUTH_FNAME): cv.string,
             }
         )
     },
@@ -38,7 +40,13 @@ CONFIG_SCHEMA = vol.Schema(
 def setup(hass, config):
     """Set up Tion Component."""
     from tion import TionApi, Breezer, MagicAir
-    api = TionApi(config[DOMAIN][CONF_USERNAME], config[DOMAIN][CONF_PASSWORD], min_update_interval_sec=(config[DOMAIN][CONF_SCAN_INTERVAL]).seconds)
+    auth_fname = hass.config.path("tion_auth") if config[DOMAIN][CONF_FILE_PATH] == DEFAULT_AUTH_FNAME else config[DOMAIN][CONF_FILE_PATH]
+    api = TionApi(
+        config[DOMAIN][CONF_USERNAME],
+        config[DOMAIN][CONF_PASSWORD],
+        min_update_interval_sec=(config[DOMAIN][CONF_SCAN_INTERVAL]).seconds,
+        auth_fname=auth_fname
+    )
     assert api.authorization, "Couldn't get authorisation data!"
     _LOGGER.info(f"Api initialized with authorization {api.authorization}")
     hass.data[TION_API] = api
