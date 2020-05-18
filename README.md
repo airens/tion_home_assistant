@@ -1,8 +1,13 @@
 # Tion Home Assistant
 This component provides integration of Tion devices (breezers and climate sensors) into Home Assistant smart home system. Based on the [tion](https://github.com/airens/tion) package.
 ## Installation
+### HACS:
+1. Goto HACS->Settings->Custom repositories 
+2. Add `airens/tion_home_assistant` to `ADD CUSTOM REPOSITORY` field and select `Integration` in `CATEGORY`. Click `Save` button
+### No HACS:
 1. download zip file with this repository
 2. put content to your `config/custom_components/tion` directory
+### ...
 3. add to your configuration.yaml:
 ```yaml
 tion:
