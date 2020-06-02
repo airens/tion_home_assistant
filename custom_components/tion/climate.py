@@ -122,11 +122,11 @@ class TionClimate(ClimateDevice):
         new_mode = "manual"
         new_speed = None
         new_min_speed = new_max_speed = None
-        new_co2 = None
+        new_co2 = self._zone.target_co2
         if fan_mode == FAN_OFF:
             new_speed = 0
         elif fan_mode == FAN_AUTO:
-            new_mode = "auto" 
+            new_mode = "auto"
             new_min_speed = 0
             new_max_speed = 6
         else:
