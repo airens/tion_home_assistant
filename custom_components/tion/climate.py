@@ -122,6 +122,7 @@ class TionClimate(ClimateDevice):
         new_mode = "manual"
         new_speed = None
         new_min_speed = new_max_speed = None
+        new_co2 = None
         if fan_mode == FAN_OFF:
             new_speed = 0
         elif fan_mode == FAN_AUTO:
@@ -133,12 +134,19 @@ class TionClimate(ClimateDevice):
                 new_speed = int(fan_mode)
             elif fan_mode.count('-') == 1:  # {min}-{max}
                 new_mode = "auto"
-                new_min_speed, new_max_speed = fan_mode.split('-')
+                speeds = fan_mode
+                if fan_mode.count(':') == 1:  # {min}-{max}:{co2}
+                    speeds, new_co2 = fan_mode.split(':')
+                new_min_speed, new_max_speed = speeds.split('-')
                 new_min_speed = int(new_min_speed)
                 new_max_speed = int(new_max_speed)
-        if self._zone.mode != new_mode:
-            _LOGGER.info(f"Setting zone mode to {new_mode}")
-            self._zone.mode = new_mode
+        if self._zone.mode != new_mode or self._zone.target_co2 != new_co2:
+            if self._zone.mode != new_mode:
+                _LOGGER.info(f"Setting zone mode to {new_mode}")
+                self._zone.mode = new_mode
+            if self._zone.target_co2 != new_co2:
+                _LOGGER.info(f"Setting zone target co2 to {new_co2}")
+                self._zone.target_co2 = new_co2
             self._zone.send()
         if new_mode == "manual":
             if new_speed is not None:

@@ -28,6 +28,7 @@ Services, allowed to control your breezer:
 - `1`-`6` - on and manually controlled
 - `auto` - automatic breezer control depending on the CO2 level
 - `2-4`, `1-3`, `4-6`... etc - automatic control with set speed range
+- `2-4:800`, `1-3:900`, `4-6:1000`... etc - automatic control with set speed range and target CO2 level
 ### climate.set_hvac_mode
 `hvac_mode` defines your breezer's heater state:
 - `heat` - heater on
