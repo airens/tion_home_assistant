@@ -232,6 +232,11 @@ class TionClimate(ClimateDevice):
         return self._breezer.t_in if self._breezer.valid else STATE_UNKNOWN
 
     @property
+    def gate(self) -> str:
+        """Return gate type"""
+        return "inside" if self._breezer.gate == 0 else ("combined" if self._breezer.gate == 1 else ("outside" if self._breezer.gate == 2 else STATE_UNKNOWN))
+
+    @property
     def state_attributes(self) -> dict:
         """Return optional state attributes."""
         data = super().state_attributes
@@ -242,6 +247,7 @@ class TionClimate(ClimateDevice):
         data["speed_max_set"] = self.speed_max_set
         data["filter_need_replace"] = self.filter_need_replace
         data["t_in"] = self.t_in
+        data["gate"] = self.gate
         return data
 
     @property
