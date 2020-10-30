@@ -15,7 +15,7 @@ HUM_PERCENT = "%"
 # Device types
 MAGICAIR_DEVICE = "magicair"
 BREEZER_DEVICE = "breezer"
-
+THERMOSTAT_DEVICE = "thermostat"
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ CONFIG_SCHEMA = vol.Schema(
 
 def setup(hass, config):
     """Set up Tion Component."""
-    from tion import TionApi, Breezer, MagicAir
+    from tion import TionApi, Breezer, MagicAir, Thermostat
     auth_fname = hass.config.path("tion_auth") if config[DOMAIN][CONF_FILE_PATH] == DEFAULT_AUTH_FNAME else config[DOMAIN][CONF_FILE_PATH]
     api = TionApi(
         config[DOMAIN][CONF_USERNAME],
@@ -53,12 +53,16 @@ def setup(hass, config):
     discovery_info = {}
     for device in api.get_devices():
         if device.valid:
-            device_type = BREEZER_DEVICE if type(device) == Breezer else (MAGICAIR_DEVICE if type(device) == MagicAir else None)
+            device_type = BREEZER_DEVICE if type(device) == Breezer else (MAGICAIR_DEVICE if type(device) == MagicAir  else (THERMOSTAT_DEVICE if type(device) == Thermostat  else None))
             if device_type:
                 if "sensor" not in discovery_info:
                     discovery_info["sensor"] = []
                 discovery_info["sensor"].append({"type": device_type, "guid": device.guid})
                 if device_type == BREEZER_DEVICE:
+                    if "climate" not in discovery_info:
+                        discovery_info["climate"] = []
+                    discovery_info["climate"].append({"type": device_type, "guid": device.guid})
+                if device_type == THERMOSTAT_DEVICE:
                     if "climate" not in discovery_info:
                         discovery_info["climate"] = []
                     discovery_info["climate"].append({"type": device_type, "guid": device.guid})

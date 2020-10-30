@@ -22,7 +22,7 @@ from homeassistant.const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-from tion import Breezer
+from tion import Breezer, Thermostat
 
 from . import TION_API
 
@@ -34,7 +34,10 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         return
     devices = []
     for device in discovery_info:
-        devices.append(TionClimate(tion, device["guid"]))
+        if "thermostat" in device["type"]:
+            devices.append(DanfossClimate(tion, device["guid"]))  
+        else: 
+            devices.append(TionClimate(tion, device["guid"]))
     add_entities(devices)
 
 
@@ -263,3 +266,107 @@ class TionClimate(ClimateDevice):
     def available(self) -> bool:
         """Return True if entity is available."""
         return self._breezer.valid and self._zone.valid
+
+class DanfossClimate(ClimateDevice):
+
+    def __init__(self, tion, guid):
+        """Init climate device."""
+        self._thermostat: Thermostat = tion.get_devices(guid=guid)[0]
+        self._zone: Zone = tion.get_zones(guid=self._thermostat.zone.guid)[0]
+
+    @property
+    def temperature_unit(self):
+        """Return the unit of measurement used by the platform."""
+        return TEMP_CELSIUS
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        return f"{self._thermostat.name}"
+
+    @property
+    def hvac_mode(self):
+        """Return current operation ie. heat, cool, idle."""
+        if self._thermostat.valid:
+            return HVAC_MODE_HEAT
+        else:
+            return STATE_UNKNOWN
+
+    @property
+    def hvac_modes(self):
+        """Return the list of available operation modes."""
+        return [HVAC_MODE_HEAT]
+
+    @property
+    def current_temperature(self):
+        """Return the current temperature."""
+        return self._thermostat.temperature if self._thermostat.valid else STATE_UNKNOWN
+
+    @property
+    def target_temperature(self):
+        """Return the temperature we try to reach."""
+        return self._thermostat.t_set if self._thermostat.valid else STATE_UNKNOWN
+
+    @property
+    def target_temperature_step(self):
+        """Return the supported step of target temperature."""
+        return 1
+
+    @property
+    def fan_mode(self):
+        """Return the fan setting."""
+        return FAN_OFF
+
+    @property
+    def fan_modes(self):
+        return [FAN_OFF]
+
+    def set_temperature(self, **kwargs):
+        """Set new target temperature."""      
+        if ATTR_TEMPERATURE in kwargs:
+            _LOGGER.info(f"Setting thermostat target temperature")
+            self._thermostat.t_set = int(kwargs[ATTR_TEMPERATURE])
+            self._thermostat.send()
+
+    def set_fan_mode(self, fan_mode):
+        """Set new target fan mode."""
+        _LOGGER.info(f"Setting thermostat fan_mode")
+
+    def set_hvac_mode(self, hvac_mode):
+        """Set new target operation mode."""
+        _LOGGER.info(f"Setting hvac mode to {hvac_mode}")
+
+
+    def update(self):
+        """Fetch new state data for the thermostat.
+        This is the only method that should fetch new data for Home Assistant.
+        """
+        self._zone.load()
+        self._thermostat.load()
+
+    @property
+    def supported_features(self):
+        """Return the list of supported features."""
+        return SUPPORT_TARGET_TEMPERATURE
+
+    @property
+    def mode(self) -> str:
+        """Return the current mode"""
+        return self._zone.mode if self._zone.valid else STATE_UNKNOWN
+
+    @property
+    def state_attributes(self) -> dict:
+        """Return optional state attributes."""
+        data = super().state_attributes
+        data["mode"] = self.mode
+        return data
+
+    @property
+    def icon(self):
+        """Return the entity picture to use in the frontend, if any."""
+        return "mdi:thermostat"
+
+    @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        return self._thermostat.valid and self._zone.valid

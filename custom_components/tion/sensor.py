@@ -2,11 +2,11 @@
 import logging
 from homeassistant.const import TEMP_CELSIUS, STATE_UNKNOWN
 from homeassistant.helpers.entity import Entity
-from tion import MagicAir
+from tion import MagicAir, Thermostat
 
 _LOGGER = logging.getLogger(__name__)
 
-from . import TION_API, BREEZER_DEVICE, MAGICAIR_DEVICE, CO2_PPM, HUM_PERCENT
+from . import TION_API, BREEZER_DEVICE, MAGICAIR_DEVICE, CO2_PPM, HUM_PERCENT, THERMOSTAT_DEVICE
 
 # Sensor types
 CO2_SENSOR = {"unit": CO2_PPM, "name": "co2"}
@@ -30,6 +30,8 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         elif device["type"] == BREEZER_DEVICE:
             devices.append(TionSensor(tion, device["guid"], TEMP_IN_SENSOR))
             devices.append(TionSensor(tion, device["guid"], TEMP_OUT_SENSOR))
+        if device["type"] == THERMOSTAT_DEVICE:
+            devices.append(TionSensor(tion, device["guid"], TEMP_SENSOR))         
     add_entities(devices)
 
 
