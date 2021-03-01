@@ -2,7 +2,7 @@
 import logging
 from time import sleep
 
-from homeassistant.components.climate import ClimateDevice
+from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
     HVAC_MODE_FAN_ONLY,
     HVAC_MODE_HEAT,
@@ -38,7 +38,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     add_entities(devices)
 
 
-class TionClimate(ClimateDevice):
+class TionClimate(ClimateEntity):
     """Tuya climate devices,include air conditioner,heater."""
 
     def __init__(self, tion, guid):
