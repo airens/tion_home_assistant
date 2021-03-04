@@ -40,6 +40,11 @@ class TionSensor(Entity):
         self._sensor_type = sensor_type
 
     @property
+    def unique_id(self):
+        """Return a unique id identifying the entity."""
+        return self._device.guid
+
+    @property
     def name(self):
         """Return the name of the sensor."""
         return f"{self._device.name} {self._sensor_type['name']}"
