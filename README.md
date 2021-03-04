@@ -1,47 +1,49 @@
 # Tion Home Assistant
-This component provides integration of Tion devices (breezers and climate sensors) into Home Assistant smart home system. Based on the [tion](https://github.com/airens/tion) package.
-## Installation
+Интеграция обеспечивает управление бризерами Tion, а также чтение показаний датчиков (включая датчики MagicAir) из системы умного дома Home Assistant. Основано на пакете [tion](https://github.com/airens/tion).
+*Внимание: для работы требуется шлюз MagicAir!*
+## Установка
 ### HACS:
-1. Goto HACS->Settings->Custom repositories 
-2. Add `airens/tion_home_assistant` to `ADD CUSTOM REPOSITORY` field and select `Integration` in `CATEGORY`. Click `Save` button
-### No HACS:
-1. download zip file with this repository
-2. put content to your `config/custom_components/tion` directory
+1. HACS->Settings->Custom repositories 
+2. Добавьте `airens/tion_home_assistant` в поле `ADD CUSTOM REPOSITORY` и выберите `Integration` в `CATEGORY`. Щелкните кнопку `Save`
+### Без HACS:
+1. скачайте zip файл с компонентом
+2. поместите содержимое в `config/custom_components/tion` папку системы Home Assistant
 ### ...
-3. add to your configuration.yaml:
+3. добавьте в ваш файл конфигурации (`configuration.yaml`):
 ```yaml
 tion:
   username: !secret tion_email
   password: !secret tion_password
 ```
-4. optionally: set sensors update interval in secs (default - 120)
+4. не обязательно: можно задать периодичность опроса датчиков (по умолчанию - 120 секунд)
 ```yaml
   scan_interval: 600
 ```
-5. optionally: set path to file to save auth information (default - "{homeassistant_config_dir}/tion_auth")
+5. не обязательно: можно задать альтернативный путь для файла-хранилища аутентификации (по умолчанию - "{homeassistant_config_dir}/tion_auth")
 ```yaml
   file_path: "/tmp/tion_auth"
 ```
-6. add `tion_email` and `tion_password` to your secrets.yaml
-7. restart Home Assistant
-## Usage:
-After restart you should see your breezer device as `climate.tion_...` and your MagicAir sensors as `sensor.magicair_..`.
-Services, allowed to control your breezer:
+6. добавьте `tion_email` и `tion_password` в ваще хранилище паролей Home Assistant `secrets.yaml`
+7. перезагрузите Home Assistant
+## Использование:
+После перезагрузки, среди устройств должны появиться бризеры `climate.tion_...` и датчики MagicAir `sensor.magicair_..`.
+Службы Home Assistant для управления вашими устройствами:
 ### climate.set_fan_mode
-`fan_mode` parameter defines the speed of the device in format:
-- `off`, `0` - turned off
-- `1`-`6` - on and manually controlled
-- `auto` - automatic breezer control depending on the CO2 level
-- `2-4`, `1-3`, `4-6`... etc - automatic control with set speed range
-- `2-4:800`, `1-3:900`, `4-6:1000`... etc - automatic control with set speed range and target CO2 level
+`fan_mode` задает скорость бризера следующим образом:
+- `off`, `0` - выключить
+- `1`-`6` - включить в ручном режиме с заданной скоростью
+- `1`-`6`:`0-2` - включить в ручном режиме с заданной скоростью и задать откуда брать воздух (`0` - с улицы, `1` - смешанный, `2` - из дома)
+- `auto` - автоматическое управление скоростью в зависимости от уровня CO2
+- `2-4`, `1-3`, `4-6`... автоматическое управление в заданном диапазоне скоростей
+- `2-4:800`, `1-3:900`, `4-6:1000`... автоматическое управление в заданном диапазоне скоростей с задачей целевого уровня CO2
 ### climate.set_hvac_mode
-`hvac_mode` defines your breezer's heater state:
-- `heat` - heater on
-- `fan_only` - heater off
+`hvac_mode` задает состояние нагревателя входящего воздуха:
+- `heat` - нагреватель включен
+- `fan_only` - нагреватель выключен
 ### climate.set_temperature
-can be used to set target temperature for heater by setting `temperature` parameter
-## Troubleshooting
-If something went wrong, turn on extended logs for this component and for the `tion` package in your `configuration.yaml`:
+Используйте для задачи целевой температуры нагревателя
+## Если что-то не работает
+Включите расширенное логирование для интеграции и пакета `tion` в файле конфигурации `configuration.yaml`:
 ```yaml
 logger:
   default: warning
