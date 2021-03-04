@@ -52,6 +52,11 @@ class TionClimate(ClimateEntity):
         return TEMP_CELSIUS
 
     @property
+    def unique_id(self):
+        """Return a unique id identifying the entity."""
+        return self._breezer.guid
+
+    @property
     def name(self):
         """Return the name of the sensor."""
         return f"{self._breezer.name}"
@@ -127,6 +132,7 @@ class TionClimate(ClimateEntity):
         new_speed = None
         new_min_speed = new_max_speed = None
         new_co2 = self._zone.target_co2
+        new_gate = None
         if fan_mode == FAN_OFF:
             new_speed = 0
         elif fan_mode == FAN_AUTO:
@@ -136,6 +142,10 @@ class TionClimate(ClimateEntity):
         else:
             if fan_mode.isdigit():  # 1-6
                 new_speed = int(fan_mode)
+            elif fan_mode.count('-') == 0 and fan_mode.count(':') == 1:  # speed:gate
+                new_speed, new_gate = fan_mode.split(':')
+                new_speed = int(new_speed)
+                new_gate = int(new_gate)
             elif fan_mode.count('-') == 1:  # {min}-{max}
                 new_mode = "auto"
                 speeds = fan_mode
@@ -156,6 +166,8 @@ class TionClimate(ClimateEntity):
             if new_speed is not None:
                 _LOGGER.info(f"Setting breezer fan_mode to {new_speed}")
                 self._breezer.speed = new_speed
+                if new_gate is not None:
+                    self._breezer.gate = new_gate
                 self._breezer.send()
         else:  # auto
             if (new_min_speed is not None and new_max_speed is not None) and \
