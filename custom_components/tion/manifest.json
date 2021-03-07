@@ -3,7 +3,7 @@
   "name": "Tion",
   "documentation": "https://github.com/airens/tion_home_assistant",
   "requirements": [
-    "tion==1.21"
+    "tion==1.22"
   ],
   "issue_tracker": "https://github.com/airens/tion_home_assistant/issues",
   "dependencies": [],
