@@ -1,7 +1,12 @@
 """Platform for sensor integration."""
 import logging
+from homeassistant.components.sensor import (
+    SensorStateClass,
+    SensorEntity,
+)
+
+from homeassistant.components.sensor import ATTR_STATE_CLASS as STATE_CLASS
 from homeassistant.const import TEMP_CELSIUS, STATE_UNKNOWN
-from homeassistant.helpers.entity import Entity
 from tion import MagicAir
 
 _LOGGER = logging.getLogger(__name__)
@@ -9,11 +14,31 @@ _LOGGER = logging.getLogger(__name__)
 from . import TION_API, BREEZER_DEVICE, MAGICAIR_DEVICE, CO2_PPM, HUM_PERCENT
 
 # Sensor types
-CO2_SENSOR = {"unit": CO2_PPM, "name": "co2"}
-TEMP_SENSOR = {"unit": TEMP_CELSIUS, "name": "temperature"}
-HUM_SENSOR = {"unit": HUM_PERCENT, "name": "humidity"}
-TEMP_IN_SENSOR = {"unit": TEMP_CELSIUS, "name": "temperature in"}
-TEMP_OUT_SENSOR = {"unit": TEMP_CELSIUS, "name": "temperature out"}
+CO2_SENSOR = {
+    "unit": CO2_PPM,
+    "name": "co2",
+    STATE_CLASS: SensorStateClass.MEASUREMENT,
+}
+TEMP_SENSOR = {
+    "unit": TEMP_CELSIUS,
+    "name": "temperature",
+    STATE_CLASS: SensorStateClass.MEASUREMENT,
+}
+HUM_SENSOR = {
+    "unit": HUM_PERCENT,
+    "name": "humidity",
+    STATE_CLASS: SensorStateClass.MEASUREMENT,
+}
+TEMP_IN_SENSOR = {
+    "unit": TEMP_CELSIUS,
+    "name": "temperature in",
+    STATE_CLASS: SensorStateClass.MEASUREMENT,
+}
+TEMP_OUT_SENSOR = {
+    "unit": TEMP_CELSIUS,
+    "name": "temperature out",
+    STATE_CLASS: SensorStateClass.MEASUREMENT,
+}
 
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
@@ -33,8 +58,9 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     add_entities(devices)
 
 
-class TionSensor(Entity):
+class TionSensor(SensorEntity):
     """Representation of a Sensor."""
+
     def __init__(self, tion, guid, sensor_type):
         self._device = tion.get_devices(guid=guid)[0]
         self._sensor_type = sensor_type
@@ -69,6 +95,11 @@ class TionSensor(Entity):
     def unit_of_measurement(self):
         """Return the unit of measurement."""
         return self._sensor_type["unit"] if self._device.valid else None
+
+    @property
+    def state_class(self):
+        """Return sensor state class"""
+        return self._sensor_type[STATE_CLASS] if self._device.valid else None
 
     def update(self):
         """Fetch new state data for the sensor.
