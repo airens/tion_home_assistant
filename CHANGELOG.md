@@ -7,4 +7,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.01] - 2022-11-10
 ### Added
-- added support for HVAC_MODE_OFF
+- добавлена поддержка HVAC_MODE_OFF, версия библиотеки tion обновлена до 1.26
