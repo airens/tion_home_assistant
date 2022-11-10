@@ -1,10 +1,10 @@
 {
   "domain": "tion",
   "name": "Tion",
-  "version": "1.01",
+  "version": "1.02",
   "documentation": "https://github.com/airens/tion_home_assistant",
   "requirements": [
-    "tion==1.26"
+    "tion==1.27"
   ],
   "issue_tracker": "https://github.com/airens/tion_home_assistant/issues",
   "dependencies": [],
