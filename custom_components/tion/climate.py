@@ -4,25 +4,24 @@ from time import sleep
 
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
-    HVAC_MODE_FAN_ONLY,
-    HVAC_MODE_HEAT,
-    SUPPORT_FAN_MODE,
-    SUPPORT_TARGET_TEMPERATURE,
-    HVAC_MODE_OFF,
+    HVACMode,
+    ClimateEntityFeature,
     FAN_OFF,
     FAN_AUTO,
-    ATTR_HVAC_MODE
+    ATTR_HVAC_MODE,
 )
 from homeassistant.const import (
+    UnitOfTemperature,
     ATTR_TEMPERATURE,
-    PRECISION_WHOLE,
-    TEMP_CELSIUS,
     STATE_UNKNOWN,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-from tion import Breezer
+from tion import (
+    Breezer,
+    Zone,
+)
 
 from . import TION_API
 
@@ -39,7 +38,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 
 
 class TionClimate(ClimateEntity):
-    """Tuya climate devices,include air conditioner,heater."""
+    """Tion climate devices,include air conditioner,heater."""
 
     def __init__(self, tion, guid):
         """Init climate device."""
@@ -49,7 +48,7 @@ class TionClimate(ClimateEntity):
     @property
     def temperature_unit(self):
         """Return the unit of measurement used by the platform."""
-        return TEMP_CELSIUS
+        return UnitOfTemperature.CELSIUS
 
     @property
     def unique_id(self):
@@ -66,20 +65,20 @@ class TionClimate(ClimateEntity):
         """Return current operation ie. heat, cool, idle."""
         if self._breezer.valid:
             if self._zone.mode == "manual" and not self._breezer.is_on:
-                return HVAC_MODE_OFF
+                return HVACMode.OFF
             elif self._breezer.heater_enabled:
-                return HVAC_MODE_HEAT
+                return HVACMode.HEAT
             else:
-                return HVAC_MODE_FAN_ONLY
+                return HVACMode.FAN_ONLY
         else:
             return STATE_UNKNOWN
 
     @property
     def hvac_modes(self):
         """Return the list of available operation modes."""
-        _operations = [HVAC_MODE_OFF, HVAC_MODE_FAN_ONLY]
+        _operations = [HVACMode.OFF, HVACMode.FAN_ONLY]
         if self._breezer.heater_installed:
-            _operations.append(HVAC_MODE_HEAT)
+            _operations.append(HVACMode.HEAT)
         return _operations
 
     @property
@@ -180,12 +179,12 @@ class TionClimate(ClimateEntity):
     def set_hvac_mode(self, hvac_mode):
         """Set new target operation mode."""
         _LOGGER.info(f"Setting hvac mode to {hvac_mode}")
-        if hvac_mode == HVAC_MODE_OFF:
+        if hvac_mode == HVACMode.OFF:
             self.set_fan_mode(FAN_OFF)
-        elif hvac_mode == HVAC_MODE_HEAT:
+        elif hvac_mode == HVACMode.HEAT:
             self._breezer.heater_enabled = True
             self._breezer.send()
-        elif hvac_mode == HVAC_MODE_FAN_ONLY:
+        elif hvac_mode == HVACMode.FAN_ONLY:
             self._breezer.heater_enabled = False
             self._breezer.send()
 
@@ -199,9 +198,9 @@ class TionClimate(ClimateEntity):
     @property
     def supported_features(self):
         """Return the list of supported features."""
-        supports = SUPPORT_FAN_MODE
+        supports = ClimateEntityFeature.FAN_MODE
         if self._breezer.heater_installed:
-            supports |= SUPPORT_TARGET_TEMPERATURE
+            supports |= ClimateEntityFeature.TARGET_TEMPERATURE
         return supports
 
     @property

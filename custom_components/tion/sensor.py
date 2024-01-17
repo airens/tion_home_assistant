@@ -6,7 +6,7 @@ from homeassistant.components.sensor import (
 )
 
 from homeassistant.components.sensor import ATTR_STATE_CLASS as STATE_CLASS
-from homeassistant.const import TEMP_CELSIUS, STATE_UNKNOWN
+from homeassistant.const import UnitOfTemperature, STATE_UNKNOWN
 from tion import MagicAir
 
 _LOGGER = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ CO2_SENSOR = {
     STATE_CLASS: SensorStateClass.MEASUREMENT,
 }
 TEMP_SENSOR = {
-    "unit": TEMP_CELSIUS,
+    "unit": UnitOfTemperature.CELSIUS,
     "name": "temperature",
     STATE_CLASS: SensorStateClass.MEASUREMENT,
 }
@@ -30,12 +30,12 @@ HUM_SENSOR = {
     STATE_CLASS: SensorStateClass.MEASUREMENT,
 }
 TEMP_IN_SENSOR = {
-    "unit": TEMP_CELSIUS,
+    "unit": UnitOfTemperature.CELSIUS,
     "name": "temperature in",
     STATE_CLASS: SensorStateClass.MEASUREMENT,
 }
 TEMP_OUT_SENSOR = {
-    "unit": TEMP_CELSIUS,
+    "unit": UnitOfTemperature.CELSIUS,
     "name": "temperature out",
     STATE_CLASS: SensorStateClass.MEASUREMENT,
 }
