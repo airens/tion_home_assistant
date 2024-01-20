@@ -9,6 +9,9 @@ from homeassistant.components.climate.const import (
     FAN_OFF,
     FAN_AUTO,
     ATTR_HVAC_MODE,
+    PRESET_AWAY,
+    PRESET_COMFORT,
+    PRESET_HOME,
 )
 from homeassistant.const import (
     UnitOfTemperature,
@@ -117,6 +120,32 @@ class TionClimate(ClimateEntity):
             _LOGGER.info(f"breezer.speed_limit is \"{self._breezer.speed_limit}\", fan_modes set to 0-6")
         return [str(m) for m in _fan_modes]
 
+    @property
+    def preset_mode(self):
+        """Return the preset mode. It's 3 type: indoor, outdoor, mixed"""
+        """PRESET_HOME = get air from inside """
+        """PRESET_COMFORT = get air from mixed """
+        """PRESET_AWAY = get air from outside """
+        self.gate = self._breezer.gate
+        if self.gate == 0:
+            return PRESET_HOME
+        elif self.gate == 1:
+            return PRESET_COMFORT
+        elif self.gate == 2:
+            return PRESET_AWAY
+        else:
+            return STATE_UNKNOWN
+
+    @property
+    def preset_modes(self):
+        """Return the list of available preset modes."""
+        """Return the preset modes. It's 3 type: indoor, outdoor, mixed"""
+        """PRESET_HOME = get air from inside """
+        """PRESET_COMFORT = get air from mixed """
+        """PRESET_AWAY = get air from outside """
+        _preset_modes = [PRESET_HOME, PRESET_COMFORT, PRESET_AWAY]
+        return [str(m) for m in _preset_modes]
+
     def set_temperature(self, **kwargs):
         """Set new target temperature."""
         if ATTR_TEMPERATURE in kwargs:
@@ -131,28 +160,25 @@ class TionClimate(ClimateEntity):
         new_speed = None
         new_min_speed = new_max_speed = None
         new_co2 = self._zone.target_co2
-        new_gate = None
+        """Set default gate to outside source if not defined. """
+        if self._breezer.gate.isdigit():  # 1-6
+            new_gate = self._breezer.gate
+        else:
+            new_gate = 2
+
         if fan_mode == FAN_OFF:
             new_speed = 0
+            _LOGGER.info(f"Setting fan mode to OFF")
         elif fan_mode == FAN_AUTO:
             new_mode = "auto"
             new_min_speed = 0
             new_max_speed = 6
+            _LOGGER.info(f"Setting fan mode to auto")
         else:
             if fan_mode.isdigit():  # 1-6
+                _LOGGER.info(f"Setting fan mode to {fan_mode}")
                 new_speed = int(fan_mode)
-            elif fan_mode.count('-') == 0 and fan_mode.count(':') == 1:  # speed:gate
-                new_speed, new_gate = fan_mode.split(':')
-                new_speed = int(new_speed)
-                new_gate = int(new_gate)
-            elif fan_mode.count('-') == 1:  # {min}-{max}
-                new_mode = "auto"
-                speeds = fan_mode
-                if fan_mode.count(':') == 1:  # {min}-{max}:{co2}
-                    speeds, new_co2 = fan_mode.split(':')
-                new_min_speed, new_max_speed = speeds.split('-')
-                new_min_speed = int(new_min_speed)
-                new_max_speed = int(new_max_speed)
+
         if self._zone.mode != new_mode or self._zone.target_co2 != new_co2:
             if self._zone.mode != new_mode:
                 _LOGGER.info(f"Setting zone mode to {new_mode}")
@@ -175,6 +201,18 @@ class TionClimate(ClimateEntity):
                 self._breezer.speed_min_set = new_min_speed
                 self._breezer.speed_max_set = new_max_speed
                 self._breezer.send()
+
+    def set_preset_mode(self, preset_mode):
+        """Set new preset mode"""
+        new_gate = 2
+        if preset_mode == PRESET_HOME:
+            new_gate = 0
+        elif preset_mode == PRESET_COMFORT:
+            new_gate = 1
+        elif preset_mode == PRESET_AWAY:
+            new_gate = 2
+        self._breezer.gate = new_gate
+        self._breezer.send()
 
     def set_hvac_mode(self, hvac_mode):
         """Set new target operation mode."""
@@ -201,6 +239,7 @@ class TionClimate(ClimateEntity):
         supports = ClimateEntityFeature.FAN_MODE
         if self._breezer.heater_installed:
             supports |= ClimateEntityFeature.TARGET_TEMPERATURE
+        supports |= ClimateEntityFeature.PRESET_MODE
         return supports
 
     @property
