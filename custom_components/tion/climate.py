@@ -122,16 +122,16 @@ class TionClimate(ClimateEntity):
 
     @property
     def preset_mode(self):
-        """Return the preset mode. It's 3 type: indoor, outdoor, mixed"""
+        """Return the preset mode. It's 3 type: inside, outside, mixed"""
         """PRESET_HOME = get air from inside """
         """PRESET_COMFORT = get air from mixed """
         """PRESET_AWAY = get air from outside """
-        self.gate = self._breezer.gate
-        if self.gate == 0:
+        gate = self._breezer.gate
+        if gate == 0:
             return PRESET_HOME
-        elif self.gate == 1:
+        elif gate == 1:
             return PRESET_COMFORT
-        elif self.gate == 2:
+        elif gate == 2:
             return PRESET_AWAY
         else:
             return STATE_UNKNOWN
@@ -139,7 +139,7 @@ class TionClimate(ClimateEntity):
     @property
     def preset_modes(self):
         """Return the list of available preset modes."""
-        """Return the preset modes. It's 3 type: indoor, outdoor, mixed"""
+        """Return the preset modes. It's 3 type: inside, outside, mixed"""
         """PRESET_HOME = get air from inside """
         """PRESET_COMFORT = get air from mixed """
         """PRESET_AWAY = get air from outside """
@@ -211,8 +211,11 @@ class TionClimate(ClimateEntity):
             new_gate = 1
         elif preset_mode == PRESET_AWAY:
             new_gate = 2
-        self._breezer.gate = new_gate
-        self._breezer.send()
+
+        _LOGGER.info(f"breezer.gate is \"{new_gate}\"")
+        if self._breezer.gate != new_gate:
+            self._breezer.gate = new_gate
+            self._breezer.send()
 
     def set_hvac_mode(self, hvac_mode):
         """Set new target operation mode."""
