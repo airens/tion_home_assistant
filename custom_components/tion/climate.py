@@ -1,5 +1,6 @@
 """Support for Tion breezer heater"""
 import logging
+from abc import ABC
 from time import sleep
 
 from homeassistant.components.climate import ClimateEntity
@@ -12,6 +13,8 @@ from homeassistant.components.climate.const import (
     PRESET_AWAY,
     PRESET_COMFORT,
     PRESET_HOME,
+    PRESET_ACTIVITY,
+    PRESET_SLEEP,
 )
 from homeassistant.const import (
     UnitOfTemperature,
@@ -19,14 +22,14 @@ from homeassistant.const import (
     STATE_UNKNOWN,
 )
 
-_LOGGER = logging.getLogger(__name__)
-
 from tion import (
     Breezer,
     Zone,
 )
 
 from . import TION_API
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
@@ -47,6 +50,19 @@ class TionClimate(ClimateEntity):
         """Init climate device."""
         self._breezer: Breezer = tion.get_devices(guid=guid)[0]
         self._zone: Zone = tion.get_zones(guid=self._breezer.zone.guid)[0]
+        self.preset = STATE_UNKNOWN
+
+    def turn_aux_heat_on(self) -> None:
+        pass
+
+    def turn_aux_heat_off(self) -> None:
+        pass
+
+    def set_swing_mode(self, swing_mode: str) -> None:
+        pass
+
+    def set_humidity(self, humidity: int) -> None:
+        pass
 
     @property
     def temperature_unit(self):
@@ -126,15 +142,8 @@ class TionClimate(ClimateEntity):
         """PRESET_HOME = get air from inside """
         """PRESET_COMFORT = get air from mixed """
         """PRESET_AWAY = get air from outside """
-        gate = self._breezer.gate
-        if gate == 0:
-            return PRESET_HOME
-        elif gate == 1:
-            return PRESET_COMFORT
-        elif gate == 2:
-            return PRESET_AWAY
-        else:
-            return STATE_UNKNOWN
+        _LOGGER.info(f"Preset is \"{self.preset}\"")
+        return self.preset
 
     @property
     def preset_modes(self):
@@ -143,7 +152,7 @@ class TionClimate(ClimateEntity):
         """PRESET_HOME = get air from inside """
         """PRESET_COMFORT = get air from mixed """
         """PRESET_AWAY = get air from outside """
-        _preset_modes = [PRESET_HOME, PRESET_COMFORT, PRESET_AWAY]
+        _preset_modes = [PRESET_HOME, PRESET_COMFORT, PRESET_AWAY, PRESET_ACTIVITY, PRESET_SLEEP, STATE_UNKNOWN]
         return [str(m) for m in _preset_modes]
 
     def set_temperature(self, **kwargs):
@@ -156,15 +165,10 @@ class TionClimate(ClimateEntity):
 
     def set_fan_mode(self, fan_mode):
         """Set new target fan mode."""
+        _LOGGER.info(f"Start setting fan_mode mode to {fan_mode}")
         new_mode = "manual"
         new_speed = None
         new_min_speed = new_max_speed = None
-        new_co2 = self._zone.target_co2
-        """Set default gate to outside source if not defined. """
-        if self._breezer.gate.isdigit():  # 1-6
-            new_gate = self._breezer.gate
-        else:
-            new_gate = 2
 
         if fan_mode == FAN_OFF:
             new_speed = 0
@@ -173,26 +177,15 @@ class TionClimate(ClimateEntity):
             new_mode = "auto"
             new_min_speed = 0
             new_max_speed = 6
-            _LOGGER.info(f"Setting fan mode to auto")
+            _LOGGER.info(f"Setting fan mode to AUTO")
         else:
-            if fan_mode.isdigit():  # 1-6
-                _LOGGER.info(f"Setting fan mode to {fan_mode}")
-                new_speed = int(fan_mode)
+            _LOGGER.info(f"Setting fan mode to {fan_mode}")
+            new_speed = int(fan_mode)
 
-        if self._zone.mode != new_mode or self._zone.target_co2 != new_co2:
-            if self._zone.mode != new_mode:
-                _LOGGER.info(f"Setting zone mode to {new_mode}")
-                self._zone.mode = new_mode
-            if self._zone.target_co2 != new_co2:
-                _LOGGER.info(f"Setting zone target co2 to {new_co2}")
-                self._zone.target_co2 = new_co2
-            self._zone.send()
         if new_mode == "manual":
             if new_speed is not None:
                 _LOGGER.info(f"Setting breezer fan_mode to {new_speed}")
                 self._breezer.speed = new_speed
-                if new_gate is not None:
-                    self._breezer.gate = new_gate
                 self._breezer.send()
         else:  # auto
             if (new_min_speed is not None and new_max_speed is not None) and \
@@ -204,18 +197,36 @@ class TionClimate(ClimateEntity):
 
     def set_preset_mode(self, preset_mode):
         """Set new preset mode"""
-        new_gate = 2
-        if preset_mode == PRESET_HOME:
+        if preset_mode == PRESET_SLEEP:
+            self._breezer.gate = 2
+            self._breezer.speed = 1
+            self._breezer.heater_enabled = False
+            self.preset = PRESET_SLEEP
+        elif preset_mode == PRESET_ACTIVITY:
+            self._breezer.gate = 2
+            self._breezer.speed = 2
+            self._breezer.heater_enabled = False
+            self.preset = PRESET_ACTIVITY
+        elif preset_mode == PRESET_HOME:
             new_gate = 0
+            self._breezer.gate = new_gate
+            self.preset = PRESET_HOME
         elif preset_mode == PRESET_COMFORT:
             new_gate = 1
+            self._breezer.gate = new_gate
+            self.preset = PRESET_COMFORT
         elif preset_mode == PRESET_AWAY:
             new_gate = 2
-
-        _LOGGER.info(f"breezer.gate is \"{new_gate}\"")
-        if self._breezer.gate != new_gate:
             self._breezer.gate = new_gate
-            self._breezer.send()
+            self.preset = PRESET_AWAY
+        elif preset_mode == STATE_UNKNOWN:
+            pass
+        else:
+            new_gate = 2
+            self._breezer.gate = new_gate
+
+        _LOGGER.info(f"Change preset to \"{preset_mode}\"")
+        self._breezer.send()
 
     def set_hvac_mode(self, hvac_mode):
         """Set new target operation mode."""
