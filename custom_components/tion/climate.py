@@ -104,7 +104,7 @@ class TionClimate(ClimateEntity):
         elif not self._breezer.is_on:
             return FAN_OFF
         else:
-            return self._breezer.speed
+            return str(int(self._breezer.speed))
 
     @property
     def fan_modes(self):
@@ -115,7 +115,7 @@ class TionClimate(ClimateEntity):
         except Exception as e:
             _fan_modes.extend(range(0, 7))
             _LOGGER.info(f"breezer.speed_limit is \"{self._breezer.speed_limit}\", fan_modes set to 0-6")
-        return _fan_modes
+        return [str(m) for m in _fan_modes]
 
     def set_temperature(self, **kwargs):
         """Set new target temperature."""
