@@ -1,12 +1,10 @@
 {
   "domain": "tion",
   "name": "Tion",
-  "version": "1.04",
-  "documentation": "https://github.com/airens/tion_home_assistant",
-  "requirements": [
-    "tion==1.28"
-  ],
-  "issue_tracker": "https://github.com/airens/tion_home_assistant/issues",
+  "version": "1.05",
+  "documentation": "https://github.com/reallord/tion_home_assistant",
+  "requirements": ["tion==1.28"],
+  "issue_tracker": "https://github.com/reallord/tion_home_assistant/issues",
   "dependencies": [],
-  "codeowners": ["Valeriy Chistyakov"]
+  "codeowners": ["Valeriy Chistyakov vs Dmitry Durandin"]
 }

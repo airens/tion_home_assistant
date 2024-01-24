@@ -1,7 +1,5 @@
 """Support for Tion breezer heater"""
 import logging
-from abc import ABC
-from time import sleep
 
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
@@ -15,6 +13,10 @@ from homeassistant.components.climate.const import (
     PRESET_HOME,
     PRESET_ACTIVITY,
     PRESET_SLEEP,
+    PRESET_BOOST,
+    SWING_VERTICAL,
+    SWING_HORIZONTAL,
+    SWING_BOTH,
 )
 from homeassistant.const import (
     UnitOfTemperature,
@@ -53,13 +55,25 @@ class TionClimate(ClimateEntity):
         self.preset = STATE_UNKNOWN
 
     def turn_aux_heat_on(self) -> None:
-        pass
+        self._breezer.heater_enabled = True
+        self._breezer.send()
 
     def turn_aux_heat_off(self) -> None:
-        pass
+        self._breezer.heater_enabled = False
+        self._breezer.send()
 
     def set_swing_mode(self, swing_mode: str) -> None:
-        pass
+        """Set new preset mode"""
+        if swing_mode == SWING_VERTICAL:
+            self._breezer.gate = 0
+        elif swing_mode == SWING_BOTH:
+            self._breezer.gate = 1
+        elif swing_mode == SWING_HORIZONTAL:
+            self._breezer.gate = 2
+        else:
+            self._breezer.gate = 2
+        _LOGGER.info(f"Swing mode changed to \"{swing_mode}\"")
+        self._breezer.send()
 
     def set_humidity(self, humidity: int) -> None:
         pass
@@ -152,8 +166,38 @@ class TionClimate(ClimateEntity):
         """PRESET_HOME = get air from inside """
         """PRESET_COMFORT = get air from mixed """
         """PRESET_AWAY = get air from outside """
-        _preset_modes = [PRESET_HOME, PRESET_COMFORT, PRESET_AWAY, PRESET_ACTIVITY, PRESET_SLEEP, STATE_UNKNOWN]
+        _preset_modes = [PRESET_HOME, PRESET_COMFORT, PRESET_AWAY, PRESET_ACTIVITY, PRESET_SLEEP, PRESET_BOOST, STATE_UNKNOWN]
         return [str(m) for m in _preset_modes]
+
+    @property
+    def swing_mode(self):
+        """Return the swing mode. It's 3 type: inside, outside, mixed"""
+        """SWING_VERTICAL = get air from inside """
+        """SWING_BOTH = get air from mixed """
+        """SWING_HORIZONTAL = get air from outside """
+        if self._breezer.gate == 0:
+            """Inside"""
+            _swing_mode = SWING_VERTICAL
+        elif  self._breezer.gate == 1:
+            """Mixed"""
+            _swing_mode = SWING_BOTH
+        elif self._breezer.gate == 2:
+            """Outside"""
+            _swing_mode = SWING_HORIZONTAL
+        else:
+            _swing_mode = SWING_HORIZONTAL
+        _LOGGER.info(f"Swing mode is \"{_swing_mode}\"")
+        return _swing_mode
+
+    @property
+    def swing_modes(self):
+        """Return the list of available preset modes."""
+        """Return the preset modes. It's 3 type: inside, outside, mixed"""
+        """SWING_VERTICAL = get air from inside """
+        """SWING_BOTH = get air from mixed """
+        """SWING_HORIZONTAL = get air from outside """
+        _swing_modes = [SWING_VERTICAL, SWING_HORIZONTAL, SWING_BOTH]
+        return [str(m) for m in _swing_modes]
 
     def set_temperature(self, **kwargs):
         """Set new target temperature."""
@@ -207,17 +251,25 @@ class TionClimate(ClimateEntity):
             self._breezer.speed = 2
             self._breezer.heater_enabled = False
             self.preset = PRESET_ACTIVITY
+        elif preset_mode == PRESET_BOOST:
+            self._breezer.gate = 2
+            self._breezer.speed = 6
+            self._breezer.heater_enabled = False
+            self.preset = PRESET_BOOST
         elif preset_mode == PRESET_HOME:
-            new_gate = 0
-            self._breezer.gate = new_gate
+            self._breezer.gate = 0
+            self._breezer.speed = 2
+            self._breezer.heater_enabled = False
             self.preset = PRESET_HOME
         elif preset_mode == PRESET_COMFORT:
-            new_gate = 1
-            self._breezer.gate = new_gate
+            self._breezer.gate = 1
+            self._breezer.speed = 3
+            self._breezer.heater_enabled = False
             self.preset = PRESET_COMFORT
         elif preset_mode == PRESET_AWAY:
-            new_gate = 2
-            self._breezer.gate = new_gate
+            self._breezer.gate = 2
+            self._breezer.speed = 1
+            self._breezer.heater_enabled = False
             self.preset = PRESET_AWAY
         elif preset_mode == STATE_UNKNOWN:
             pass
@@ -254,6 +306,7 @@ class TionClimate(ClimateEntity):
         if self._breezer.heater_installed:
             supports |= ClimateEntityFeature.TARGET_TEMPERATURE
         supports |= ClimateEntityFeature.PRESET_MODE
+        supports |= ClimateEntityFeature.SWING_MODE
         return supports
 
     @property
