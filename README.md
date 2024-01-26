@@ -9,7 +9,7 @@
 ## Установка
 ### HACS:
 1. HACS->Settings->Custom repositories 
-2. Добавьте `reallord/tion_home_assistant` в поле `ADD CUSTOM REPOSITORY` и выберите `Integration` в `CATEGORY`. Щелкните кнопку `Save`
+2. Добавьте `RealLord/tion_home_assistant` в поле `ADD CUSTOM REPOSITORY` и выберите `Integration` в `CATEGORY`. Щелкните кнопку `Save`
 ### Без HACS:
 1. скачайте zip файл с компонентом
 2. поместите содержимое в `config/custom_components/tion` папку системы Home Assistant
