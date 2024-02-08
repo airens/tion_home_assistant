@@ -6,5 +6,6 @@
   "issue_tracker": "https://github.com/reallord/tion_home_assistant/issues",
   "dependencies": [],
   "codeowners": ["Valeriy Chistyakov vs Dmitry Durandin"],
+  "iot_class": "cloud_polling",
   "version": "1.07"
 }
