@@ -233,6 +233,10 @@ class TionClimate(ClimateEntity):
         if new_mode == "manual":
             if new_speed is not None:
                 _LOGGER.info(f"Device: {self._breezer.name} Setting breezer fan_mode to {new_speed}")
+                if self._breezer.zone.valid:
+                    self._breezer.zone.mode = "manual"
+                    self._breezer.zone.send()
+
                 self._breezer.speed = new_speed
                 self._breezer.send()
 

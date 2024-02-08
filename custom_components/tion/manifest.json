@@ -1,7 +1,7 @@
 {
   "domain": "tion",
   "name": "Tion",
-  "version": "1.06",
+  "version": "1.07",
   "documentation": "https://github.com/reallord/tion_home_assistant",
   "requirements": ["tion==1.28"],
   "issue_tracker": "https://github.com/reallord/tion_home_assistant/issues",
