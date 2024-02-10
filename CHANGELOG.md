@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.0.8] - 2024-02-10
+### Изменения
+  - Изменение нумерации версий, для соотвествия AwesomeVersion 
+  - Обновление манифеста для соответствия требованиям НА 2024.2
+  - Исправление ошибки включения TION через сервис обогрева. Переключение на вентилятор было, а скорость не включалась. И бризер оставался выключеным по факту.
+
 ## [1.07] - 2024-02-08
 ### Изменения
 #### Исправил баг режима AUTO.
