@@ -2,10 +2,12 @@
   "domain": "tion",
   "name": "Tion",
   "documentation": "https://github.com/reallord/tion_home_assistant",
-  "requirements": ["tion==1.28"],
+  "requirements": ["tion>=1.28"],
   "issue_tracker": "https://github.com/reallord/tion_home_assistant/issues",
   "dependencies": [],
   "codeowners": ["Valeriy Chistyakov vs Dmitry Durandin"],
   "iot_class": "cloud_polling",
-  "version": "1.07.00"
+  "integration_type": "device",
+  "quality_scale": "silver",
+  "version": "1.0.8"
 }

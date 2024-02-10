@@ -54,13 +54,23 @@ class TionClimate(ClimateEntity):
         """Init climate device."""
         self._breezer: Breezer = tion.get_devices(guid=guid)[0]
         self._zone: Zone = tion.get_zones(guid=self._breezer.zone.guid)[0]
-        self.preset = STATE_UNKNOWN
+        self.preset = PRESET_NONE
 
-    def turn_aux_heat_on(self) -> None:
+    def turn_aux_heat_on(self):
+        """Turn auxiliary heater on."""
         pass
 
-    def turn_aux_heat_off(self) -> None:
+    def turn_aux_heat_off(self):
+        """Turn auxiliary heater off."""
         pass
+
+    def turn_on(self) -> None:
+        self._breezer.speed = 1
+        self._breezer.send()
+
+    def turn_off(self) -> None:
+        self._breezer.speed = 0
+        self._breezer.send()
 
     def set_swing_mode(self, swing_mode: str) -> None:
         """Set new preset mode"""
@@ -74,9 +84,6 @@ class TionClimate(ClimateEntity):
             self._breezer.gate = 2
         _LOGGER.info(f"Device: {self._breezer.name} Swing mode changed to \"{swing_mode}\"")
         self._breezer.send()
-
-    def set_humidity(self, humidity: int) -> None:
-        pass
 
     @property
     def temperature_unit(self):
@@ -161,7 +168,8 @@ class TionClimate(ClimateEntity):
     @property
     def preset_modes(self):
         """Return the list of available preset modes."""
-        _preset_modes = [PRESET_SLEEP, PRESET_ACTIVITY, PRESET_HOME, PRESET_COMFORT, PRESET_BOOST, PRESET_ECO, PRESET_AWAY, PRESET_NONE]
+        _preset_modes = [PRESET_SLEEP, PRESET_ACTIVITY, PRESET_HOME, PRESET_COMFORT, PRESET_BOOST, PRESET_ECO,
+                         PRESET_AWAY, PRESET_NONE]
         return [str(m) for m in _preset_modes]
 
     @property
@@ -311,9 +319,13 @@ class TionClimate(ClimateEntity):
             self.set_fan_mode(FAN_OFF)
         elif hvac_mode == HVACMode.HEAT:
             self._breezer.heater_enabled = True
+            if self._breezer.speed == 0:
+                self._breezer.speed = 1
             self._breezer.send()
         elif hvac_mode == HVACMode.FAN_ONLY:
             self._breezer.heater_enabled = False
+            if self._breezer.speed == 0:
+                self._breezer.speed = 1
             self._breezer.send()
 
     def update(self):
@@ -327,10 +339,12 @@ class TionClimate(ClimateEntity):
     def supported_features(self):
         """Return the list of supported features."""
         supports = ClimateEntityFeature.FAN_MODE
-        if self._breezer.heater_installed:
-            supports |= ClimateEntityFeature.TARGET_TEMPERATURE
         supports |= ClimateEntityFeature.PRESET_MODE
         supports |= ClimateEntityFeature.SWING_MODE
+        supports |= ClimateEntityFeature.TURN_OFF
+        supports |= ClimateEntityFeature.TURN_ON
+        if self._breezer.heater_installed:
+            supports |= ClimateEntityFeature.TARGET_TEMPERATURE
         return supports
 
     @property
@@ -381,7 +395,6 @@ class TionClimate(ClimateEntity):
     @property
     def gate(self) -> str:
         """Return gate type"""
-        gate = ""
         if self._breezer.gate == 0:
             gate = "inside"
         elif self._breezer.gate == 1:
