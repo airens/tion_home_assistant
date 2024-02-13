@@ -9,5 +9,5 @@
   "iot_class": "cloud_polling",
   "integration_type": "device",
   "quality_scale": "silver",
-  "version": "1.0.8"
+  "version": "1.0.9"
 }

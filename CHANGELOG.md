@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.0.9] - 2024-02-13
+### Изменения
+  - Поправил код на соответствие новой версии НА, начиная с 2024.2
+    (https://developers.home-assistant.io/blog/2024/01/24/climate-climateentityfeatures-expanded)
+
 ## [1.0.8] - 2024-02-10
 ### Изменения
   - Изменение нумерации версий, для соотвествия AwesomeVersion 

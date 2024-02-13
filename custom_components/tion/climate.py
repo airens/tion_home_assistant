@@ -24,6 +24,8 @@ from homeassistant.const import (
     UnitOfTemperature,
     ATTR_TEMPERATURE,
     STATE_UNKNOWN,
+    MAJOR_VERSION,
+    MINOR_VERSION
 )
 
 from tion import (
@@ -49,6 +51,9 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 
 class TionClimate(ClimateEntity):
     """Tion climate devices,include air conditioner,heater."""
+    # https://developers.home-assistant.io/blog/2024/01/24/climate-climateentityfeatures-expanded
+    if (MAJOR_VERSION, MINOR_VERSION) >= (2024, 2):
+        _enable_turn_on_off_backwards_compatibility = False
 
     def __init__(self, tion, guid):
         """Init climate device."""
@@ -341,10 +346,14 @@ class TionClimate(ClimateEntity):
         supports = ClimateEntityFeature.FAN_MODE
         supports |= ClimateEntityFeature.PRESET_MODE
         supports |= ClimateEntityFeature.SWING_MODE
-        supports |= ClimateEntityFeature.TURN_OFF
-        supports |= ClimateEntityFeature.TURN_ON
         if self._breezer.heater_installed:
             supports |= ClimateEntityFeature.TARGET_TEMPERATURE
+
+        # https://developers.home-assistant.io/blog/2024/01/24/climate-climateentityfeatures-expanded
+        if (MAJOR_VERSION, MINOR_VERSION) >= (2024, 2):
+            supports |= ClimateEntityFeature.TURN_OFF
+            supports |= ClimateEntityFeature.TURN_ON
+
         return supports
 
     @property
