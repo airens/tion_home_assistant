@@ -6,7 +6,7 @@ from homeassistant.components.sensor import (
 )
 
 from homeassistant.components.sensor import ATTR_STATE_CLASS as STATE_CLASS
-from homeassistant.const import TEMP_CELSIUS, STATE_UNKNOWN
+from homeassistant.const import UnitOfTemperature, STATE_UNKNOWN
 from tion import MagicAir
 
 _LOGGER = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ CO2_SENSOR = {
     STATE_CLASS: SensorStateClass.MEASUREMENT,
 }
 TEMP_SENSOR = {
-    "unit": TEMP_CELSIUS,
+    "unit": UnitOfTemperature.CELSIUS,
     "name": "temperature",
     STATE_CLASS: SensorStateClass.MEASUREMENT,
 }
@@ -30,14 +30,23 @@ HUM_SENSOR = {
     STATE_CLASS: SensorStateClass.MEASUREMENT,
 }
 TEMP_IN_SENSOR = {
-    "unit": TEMP_CELSIUS,
+    "unit": UnitOfTemperature.CELSIUS,
     "name": "temperature in",
     STATE_CLASS: SensorStateClass.MEASUREMENT,
 }
 TEMP_OUT_SENSOR = {
-    "unit": TEMP_CELSIUS,
+    "unit": UnitOfTemperature.CELSIUS,
     "name": "temperature out",
     STATE_CLASS: SensorStateClass.MEASUREMENT,
+}
+SPEED_SENSOR = {
+    "unit": "",
+    "name": "speed",
+    STATE_CLASS: SensorStateClass.MEASUREMENT,
+}
+FAN_STATE_SENSOR = {
+    "name": "fan state",
+    STATE_CLASS: None,
 }
 
 
@@ -55,6 +64,8 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         elif device["type"] == BREEZER_DEVICE:
             devices.append(TionSensor(tion, device["guid"], TEMP_IN_SENSOR))
             devices.append(TionSensor(tion, device["guid"], TEMP_OUT_SENSOR))
+            devices.append(TionSensor(tion, device["guid"], SPEED_SENSOR))
+            devices.append(TionSensor(tion, device["guid"], FAN_STATE_SENSOR))
     add_entities(devices)
 
 
@@ -89,11 +100,17 @@ class TionSensor(SensorEntity):
             state = self._device.t_in
         elif self._sensor_type == TEMP_OUT_SENSOR:
             state = self._device.t_out
+        elif self._sensor_type == SPEED_SENSOR:
+            state = self._device.speed
+        elif self._sensor_type == FAN_STATE_SENSOR:
+            state = 'on' if self._device.speed > 0 else 'off'
         return state if self._device.valid else STATE_UNKNOWN
 
     @property
     def unit_of_measurement(self):
         """Return the unit of measurement."""
+        if self._sensor_type["name"] == "fan state":
+            return None
         return self._sensor_type["unit"] if self._device.valid else None
 
     @property

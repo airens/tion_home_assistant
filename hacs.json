@@ -2,6 +2,6 @@
  {
   "name": "Tion",
   "country": "RU",
-  "render_readme": false,
+  "render_readme": true,
   "domains": ["climate", "sensor"]
-}
+ }
