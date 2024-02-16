@@ -1,17 +1,25 @@
 """Platform for sensor integration."""
 import logging
+
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.components.sensor import ATTR_STATE_CLASS as STATE_CLASS
 from homeassistant.components.sensor import (
     SensorStateClass,
     SensorEntity,
 )
-
-from homeassistant.components.sensor import ATTR_STATE_CLASS as STATE_CLASS
 from homeassistant.const import UnitOfTemperature, STATE_UNKNOWN
-from tion import MagicAir
+
+from .const import CO2_PPM, HUM_PERCENT, DOMAIN
+from tion import (
+    Breezer,
+    MagicAir,
+    TionApi
+)
 
 _LOGGER = logging.getLogger(__name__)
 
-from . import TION_API, BREEZER_DEVICE, MAGICAIR_DEVICE, CO2_PPM, HUM_PERCENT
+from . import TION_API
 
 # Sensor types
 CO2_SENSOR = {
@@ -50,31 +58,41 @@ FAN_STATE_SENSOR = {
 }
 
 
-def setup_platform(hass, config, add_entities, discovery_info=None):
-    """Set up the sensor platform."""
-    tion = hass.data[TION_API]
-    if discovery_info is None:
-        return
-    devices = []
-    for device in discovery_info:
-        if device["type"] == MAGICAIR_DEVICE:
-            devices.append(TionSensor(tion, device["guid"], CO2_SENSOR))
-            devices.append(TionSensor(tion, device["guid"], TEMP_SENSOR))
-            devices.append(TionSensor(tion, device["guid"], HUM_SENSOR))
-        elif device["type"] == BREEZER_DEVICE:
-            devices.append(TionSensor(tion, device["guid"], TEMP_IN_SENSOR))
-            devices.append(TionSensor(tion, device["guid"], TEMP_OUT_SENSOR))
-            devices.append(TionSensor(tion, device["guid"], SPEED_SENSOR))
-            devices.append(TionSensor(tion, device["guid"], FAN_STATE_SENSOR))
-    add_entities(devices)
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> bool:
+    tion = hass.data[TION_API][entry.entry_id]
+
+    entities = []
+    devices = await hass.async_add_executor_job(tion.get_devices)
+    for device in devices:
+        if device.valid:
+            if type(device) == MagicAir:
+                entities.append(TionSensor(tion, device.guid, CO2_SENSOR))
+                entities.append(TionSensor(tion, device.guid, TEMP_SENSOR))
+                entities.append(TionSensor(tion, device.guid, HUM_SENSOR))
+            elif type(device) == Breezer:
+                entities.append(TionSensor(tion, device.guid, TEMP_IN_SENSOR))
+                entities.append(TionSensor(tion, device.guid, TEMP_OUT_SENSOR))
+                entities.append(TionSensor(tion, device.guid, SPEED_SENSOR))
+                entities.append(TionSensor(tion, device.guid, FAN_STATE_SENSOR))
+        else:
+            _LOGGER.info(f"Skipped device {device}, because of 'valid' property")
+
+    async_add_entities(entities)
+    return True
 
 
 class TionSensor(SensorEntity):
     """Representation of a Sensor."""
 
-    def __init__(self, tion, guid, sensor_type):
+    def __init__(self, tion: TionApi, guid, sensor_type):
         self._device = tion.get_devices(guid=guid)[0]
         self._sensor_type = sensor_type
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._device.guid)},
+        }
 
     @property
     def unique_id(self):

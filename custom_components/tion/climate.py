@@ -1,7 +1,8 @@
 """Support for Tion breezer heater"""
 import logging
-from time import sleep
 
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
     HVACMode,
@@ -23,18 +24,25 @@ from tion import (
     Zone,
 )
 
-from . import TION_API
+from . import TION_API, DOMAIN
 
 
-def setup_platform(hass, config, add_entities, discovery_info=None):
-    """Set up Tion climate platform."""
-    tion = hass.data[TION_API]
-    if discovery_info is None:
-        return
-    devices = []
-    for device in discovery_info:
-        devices.append(TionClimate(tion, device["guid"]))
-    add_entities(devices)
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> bool:
+    tion = hass.data[TION_API][entry.entry_id]
+
+    entities = []
+    devices = await hass.async_add_executor_job(tion.get_devices)
+    for device in devices:
+        if device.valid:
+            if type(device) == Breezer:
+                entities.append(TionClimate(tion, device.guid))
+
+        else:
+            _LOGGER.info(f"Skipped device {device}, because of 'valid' property")
+
+    async_add_entities(entities)
+
+    return True
 
 
 class TionClimate(ClimateEntity):
@@ -44,6 +52,17 @@ class TionClimate(ClimateEntity):
         """Init climate device."""
         self._breezer: Breezer = tion.get_devices(guid=guid)[0]
         self._zone: Zone = tion.get_zones(guid=self._breezer.zone.guid)[0]
+        self._enable_turn_on_off_backwards_compatibility = False
+        self._attr_supported_features = \
+            ClimateEntityFeature.FAN_MODE | ClimateEntityFeature.TURN_OFF | ClimateEntityFeature.TURN_ON
+        if self._breezer.heater_installed:
+            self._attr_supported_features |= ClimateEntityFeature.TARGET_TEMPERATURE
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._breezer.guid)},
+        }
 
     @property
     def temperature_unit(self):
@@ -195,13 +214,14 @@ class TionClimate(ClimateEntity):
         self._zone.load()
         self._breezer.load()
 
-    @property
-    def supported_features(self):
-        """Return the list of supported features."""
-        supports = ClimateEntityFeature.FAN_MODE
-        if self._breezer.heater_installed:
-            supports |= ClimateEntityFeature.TARGET_TEMPERATURE
-        return supports
+    def turn_off(self) -> None:
+        self.set_hvac_mode(HVACMode.OFF)
+
+    def turn_on(self) -> None:
+        if self._breezer.heater_enabled and self._breezer.heater_installed:
+            self.set_hvac_mode(HVACMode.HEAT)
+        else:
+            self.set_hvac_mode(HVACMode.FAN_ONLY)
 
     @property
     def mode(self) -> str:
