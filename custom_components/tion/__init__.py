@@ -41,6 +41,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     device_registry = dr.async_get(hass)
 
     devices = await hass.async_add_executor_job(api.get_devices)
+    models = {
+        "co2mb": "MagicAir",
+        "co2Plus": "Модуль CO2+",
+        "tionO2Rf": "Бризер O2",
+        "tionClever": "Clever",
+        "breezer3": "Бризер 3S",
+        "breezer4": "Бризер 4S"
+    }
+    device: Breezer
     for device in devices:
         if device.valid:
             device_type = BREEZER_DEVICE if type(device) == Breezer else (
@@ -49,7 +58,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 device_registry.async_get_or_create(
                     config_entry_id=entry.entry_id,
                     identifiers={(DOMAIN, device.guid)},
-                    manufacturer="Tion",
+                    manufacturer="TION",
+                    model=models.get(device.type, "Unknown device"),
                     name=device.name,
                 )
             else:
@@ -58,6 +68,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.info(f"Skipped device {device}, because of 'valid' property")
 
     # Forward to sensor platform
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    await hass.async_create_task(hass.config_entries.async_forward_entry_setups(entry, PLATFORMS))
 
     return True

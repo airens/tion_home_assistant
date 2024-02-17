@@ -52,6 +52,7 @@ class TionClimate(ClimateEntity):
         """Init climate device."""
         self._breezer: Breezer = tion.get_devices(guid=guid)[0]
         self._zone: Zone = tion.get_zones(guid=self._breezer.zone.guid)[0]
+        self._attr_temperature_unit = UnitOfTemperature.CELSIUS
         self._enable_turn_on_off_backwards_compatibility = False
         self._attr_supported_features = \
             ClimateEntityFeature.FAN_MODE | ClimateEntityFeature.TURN_OFF | ClimateEntityFeature.TURN_ON
@@ -63,11 +64,6 @@ class TionClimate(ClimateEntity):
         return {
             "identifiers": {(DOMAIN, self._breezer.guid)},
         }
-
-    @property
-    def temperature_unit(self):
-        """Return the unit of measurement used by the platform."""
-        return UnitOfTemperature.CELSIUS
 
     @property
     def unique_id(self):
@@ -83,12 +79,13 @@ class TionClimate(ClimateEntity):
     def hvac_mode(self):
         """Return current operation ie. heat, cool, idle."""
         if self._breezer.valid:
-            if self._zone.mode == "manual" and not self._breezer.is_on:
-                return HVACMode.OFF
-            elif self._breezer.heater_enabled:
-                return HVACMode.HEAT
+            if self._breezer.is_on and self._breezer.speed > 0:
+                if self._breezer.heater_enabled:
+                    return HVACMode.HEAT
+                else:
+                    return HVACMode.FAN_ONLY
             else:
-                return HVACMode.FAN_ONLY
+                return HVACMode.OFF
         else:
             return STATE_UNKNOWN
 
@@ -271,6 +268,8 @@ class TionClimate(ClimateEntity):
     @property
     def gate(self) -> str:
         """Return gate type"""
+        if self._breezer.type == "breezer4":
+            return "inside" if self._breezer.gate == 1 else ("outside" if self._breezer.gate == 0 else STATE_UNKNOWN)
         return "inside" if self._breezer.gate == 0 else ("combined" if self._breezer.gate == 1 else ("outside" if self._breezer.gate == 2 else STATE_UNKNOWN))
 
     @property
