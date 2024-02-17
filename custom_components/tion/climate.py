@@ -1,55 +1,69 @@
 """Support for Tion breezer heater"""
 import logging
-from time import sleep
 
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
-    HVAC_MODE_FAN_ONLY,
-    HVAC_MODE_HEAT,
-    SUPPORT_FAN_MODE,
-    SUPPORT_TARGET_TEMPERATURE,
-    HVAC_MODE_OFF,
+    HVACMode,
+    ClimateEntityFeature,
     FAN_OFF,
     FAN_AUTO,
-    ATTR_HVAC_MODE
+    ATTR_HVAC_MODE,
 )
 from homeassistant.const import (
+    UnitOfTemperature,
     ATTR_TEMPERATURE,
-    PRECISION_WHOLE,
-    TEMP_CELSIUS,
     STATE_UNKNOWN,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-from tion import Breezer
+from tion import (
+    Breezer,
+    Zone,
+)
 
-from . import TION_API
+from . import TION_API, DOMAIN
 
 
-def setup_platform(hass, config, add_entities, discovery_info=None):
-    """Set up Tion climate platform."""
-    tion = hass.data[TION_API]
-    if discovery_info is None:
-        return
-    devices = []
-    for device in discovery_info:
-        devices.append(TionClimate(tion, device["guid"]))
-    add_entities(devices)
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> bool:
+    tion = hass.data[TION_API][entry.entry_id]
+
+    entities = []
+    devices = await hass.async_add_executor_job(tion.get_devices)
+    for device in devices:
+        if device.valid:
+            if type(device) == Breezer:
+                entities.append(TionClimate(tion, device.guid))
+
+        else:
+            _LOGGER.info(f"Skipped device {device}, because of 'valid' property")
+
+    async_add_entities(entities)
+
+    return True
 
 
 class TionClimate(ClimateEntity):
-    """Tuya climate devices,include air conditioner,heater."""
+    """Tion climate devices,include air conditioner,heater."""
 
     def __init__(self, tion, guid):
         """Init climate device."""
         self._breezer: Breezer = tion.get_devices(guid=guid)[0]
         self._zone: Zone = tion.get_zones(guid=self._breezer.zone.guid)[0]
+        self._attr_temperature_unit = UnitOfTemperature.CELSIUS
+        self._enable_turn_on_off_backwards_compatibility = False
+        self._attr_supported_features = \
+            ClimateEntityFeature.FAN_MODE | ClimateEntityFeature.TURN_OFF | ClimateEntityFeature.TURN_ON
+        if self._breezer.heater_installed:
+            self._attr_supported_features |= ClimateEntityFeature.TARGET_TEMPERATURE
 
     @property
-    def temperature_unit(self):
-        """Return the unit of measurement used by the platform."""
-        return TEMP_CELSIUS
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._breezer.guid)},
+        }
 
     @property
     def unique_id(self):
@@ -65,21 +79,22 @@ class TionClimate(ClimateEntity):
     def hvac_mode(self):
         """Return current operation ie. heat, cool, idle."""
         if self._breezer.valid:
-            if self._zone.mode == "manual" and not self._breezer.is_on:
-                return HVAC_MODE_OFF
-            elif self._breezer.heater_enabled:
-                return HVAC_MODE_HEAT
+            if self._breezer.is_on and self._breezer.speed > 0:
+                if self._breezer.heater_enabled:
+                    return HVACMode.HEAT
+                else:
+                    return HVACMode.FAN_ONLY
             else:
-                return HVAC_MODE_FAN_ONLY
+                return HVACMode.OFF
         else:
             return STATE_UNKNOWN
 
     @property
     def hvac_modes(self):
         """Return the list of available operation modes."""
-        _operations = [HVAC_MODE_OFF, HVAC_MODE_FAN_ONLY]
+        _operations = [HVACMode.OFF, HVACMode.FAN_ONLY]
         if self._breezer.heater_installed:
-            _operations.append(HVAC_MODE_HEAT)
+            _operations.append(HVACMode.HEAT)
         return _operations
 
     @property
@@ -105,7 +120,7 @@ class TionClimate(ClimateEntity):
         elif not self._breezer.is_on:
             return FAN_OFF
         else:
-            return self._breezer.speed
+            return str(int(self._breezer.speed))
 
     @property
     def fan_modes(self):
@@ -116,7 +131,7 @@ class TionClimate(ClimateEntity):
         except Exception as e:
             _fan_modes.extend(range(0, 7))
             _LOGGER.info(f"breezer.speed_limit is \"{self._breezer.speed_limit}\", fan_modes set to 0-6")
-        return _fan_modes
+        return [str(m) for m in _fan_modes]
 
     def set_temperature(self, **kwargs):
         """Set new target temperature."""
@@ -180,12 +195,12 @@ class TionClimate(ClimateEntity):
     def set_hvac_mode(self, hvac_mode):
         """Set new target operation mode."""
         _LOGGER.info(f"Setting hvac mode to {hvac_mode}")
-        if hvac_mode == HVAC_MODE_OFF:
+        if hvac_mode == HVACMode.OFF:
             self.set_fan_mode(FAN_OFF)
-        elif hvac_mode == HVAC_MODE_HEAT:
+        elif hvac_mode == HVACMode.HEAT:
             self._breezer.heater_enabled = True
             self._breezer.send()
-        elif hvac_mode == HVAC_MODE_FAN_ONLY:
+        elif hvac_mode == HVACMode.FAN_ONLY:
             self._breezer.heater_enabled = False
             self._breezer.send()
 
@@ -196,13 +211,14 @@ class TionClimate(ClimateEntity):
         self._zone.load()
         self._breezer.load()
 
-    @property
-    def supported_features(self):
-        """Return the list of supported features."""
-        supports = SUPPORT_FAN_MODE
-        if self._breezer.heater_installed:
-            supports |= SUPPORT_TARGET_TEMPERATURE
-        return supports
+    def turn_off(self) -> None:
+        self.set_hvac_mode(HVACMode.OFF)
+
+    def turn_on(self) -> None:
+        if self._breezer.heater_enabled and self._breezer.heater_installed:
+            self.set_hvac_mode(HVACMode.HEAT)
+        else:
+            self.set_hvac_mode(HVACMode.FAN_ONLY)
 
     @property
     def mode(self) -> str:
@@ -252,6 +268,8 @@ class TionClimate(ClimateEntity):
     @property
     def gate(self) -> str:
         """Return gate type"""
+        if self._breezer.type == "breezer4":
+            return "inside" if self._breezer.gate == 1 else ("outside" if self._breezer.gate == 0 else STATE_UNKNOWN)
         return "inside" if self._breezer.gate == 0 else ("combined" if self._breezer.gate == 1 else ("outside" if self._breezer.gate == 2 else STATE_UNKNOWN))
 
     @property

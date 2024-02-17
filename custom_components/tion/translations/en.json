@@ -1,0 +1,20 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Device is already configured"
+        },
+        "error": {
+            "invalid_auth": "Invalid authentication"
+        },
+        "step": {
+            "user": {
+                "description": "Please enter your TION account credentials:",
+                "data": {
+                    "username": "Username",
+                    "password": "Password",
+                    "scan_interval": "API poll interval"
+                }
+            }
+        }
+    }
+}
